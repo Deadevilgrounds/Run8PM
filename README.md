@@ -110,6 +110,3 @@ Contributions are welcome! Feel free to submit issues or pull requests for impro
 
 This project is licensed under the MIT License. See the `LICENSE` file for more details.
 
-## Contact
-
-For questions or support, contact: **[Your Name or Email Address]**
