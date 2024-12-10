@@ -97,11 +97,10 @@ class UDPPortMirror:
             return "Invalid or incomplete message"
 
     class UDPHandler:
-        def __init__(self, source_port: int, mirror_ports: list[int], debug_level: DebugLevel):
+        def __init__(self, source_port: int, mirror_ports: list[int]):
             """Initialize the UDP handler."""
             self.source_port = source_port
             self.mirror_ports = mirror_ports
-            self.debug_level = debug_level
 
         def send_to(self, data, target):
             """Send data to the specified target."""
