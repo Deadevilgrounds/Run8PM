@@ -41,7 +41,7 @@ class UDPPortMirror:
             mirror_socket.bind((self.source_address, port))
             mirror_sockets.append(mirror_socket)
 
-        handler = self.UDPHandler(self.source_port + 1, self.mirror_ports, self.debug_level)
+        handler = self.UDPHandler(self.source_port + 1, self.mirror_ports)
 
         # Add sockets to the event loop
         loop.create_task(self.listen_on_source_response(source_response_socket, handler))
