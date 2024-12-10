@@ -4,9 +4,10 @@ from enum import IntFlag
 
 class DebugLevel(IntFlag):
     NONE = 0
+    ALL = 3
     MIRROR = 1
-    ALL = 2
-    SOURCE = 4
+    SOURCE = 2
+    TRANSLATOR = 4
 
 class UDPPortMirror:
     def __init__(self, source_address: str, source_port: int, mirror_ports: list[int], debug_level: DebugLevel = DebugLevel.NONE):
@@ -65,6 +66,8 @@ class UDPPortMirror:
             data, addr = await asyncio.get_event_loop().run_in_executor(None, source_response_socket.recvfrom, 65535)
             if self.debug_level & DebugLevel.SOURCE:
                 print(f"[DEBUG] Received {len(data)} bytes from {addr} on source response port {self.source_port + 1}")
+                if DebugLevel.TRANSLATOR:
+                    print(f"[TRANSLATED] {self.translate_message(data)}")
             for port in self.mirror_ports:
                 handler.send_to(data, ('127.0.0.1', port + 1))  # Forward to mirror response ports
 
@@ -74,7 +77,24 @@ class UDPPortMirror:
             data, addr = await asyncio.get_event_loop().run_in_executor(None, mirror_socket.recvfrom, 65535)
             if self.debug_level & DebugLevel.MIRROR:
                 print(f"[DEBUG] Received {len(data)} bytes from {addr} on mirror port {mirror_port}")
+                if DebugLevel.TRANSLATOR:
+                    print(f"[TRANSLATED] {self.translate_message(data)}")
             handler.send_to(data, ('127.0.0.1', self.source_port))  # Forward to source port
+
+    @staticmethod
+    def translate_message(data):
+        """Translate a message into a human-readable format."""
+        try:
+            header = data[0]
+            message_type = (data[1] << 8) + data[2]
+            value = data[3]
+            crc = data[4]
+            return (
+                f"Header: {header}, Message Type: {message_type}, "
+                f"Value: {value}, CRC: {crc}"
+            )
+        except IndexError:
+            return "Invalid or incomplete message"
 
     class UDPHandler:
         def __init__(self, source_port: int, mirror_ports: list[int], debug_level: DebugLevel):
@@ -87,8 +107,6 @@ class UDPPortMirror:
             """Send data to the specified target."""
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(data, target)
-            if self.debug_level & DebugLevel.ALL:
-                print(f"[DEBUG] Sent {len(data)} bytes to {target}")
             sock.close()
 
 if __name__ == "__main__":
@@ -97,9 +115,10 @@ if __name__ == "__main__":
     mirror_ports = [18890, 18895]  # Listening ports for mirrors
 
     # Set debug level to DebugLevel.MIRROR to monitor mirror to Run8 messages only
-    # Set debug level to DebugLevel.SOURCE to monitor Run8 to mirrow messages only
+    # Set debug level to DebugLevel.SOURCE to monitor Run8 to mirror messages only
     # Set debug level to DebugLevel.ALL to enable all debug messages
-    debug_level = DebugLevel.MIRROR
+    # Set debug level to DebugLevel.TRANSLATOR to translate the message bytes. Must be used with one of the above
+    debug_level = DebugLevel.MIRROR | DebugLevel.TRANSLATOR
 
     mirror = UDPPortMirror(source_address, source_port, mirror_ports, debug_level=debug_level)
 
